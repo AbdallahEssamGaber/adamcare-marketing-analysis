@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/user/Downloads/**)",
+      "Bash(python3 -c \":*)",
+      "Bash(npx:*)",
+      "Bash(shopt -s dotglob)",
+      "Bash(mv tmp-init/* .)",
+      "Bash(rm -rf tmp-init)",
+      "Bash(npm install:*)"
+    ]
+  }
+}
