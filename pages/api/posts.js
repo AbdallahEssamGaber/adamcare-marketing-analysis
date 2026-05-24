@@ -1,12 +1,22 @@
 import { supabase } from "@/lib/supabase";
+import { requireSession } from "@/lib/auth";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  if (!requireSession(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!supabase) {
+    return res
+      .status(503)
+      .json({ error: "Supabase not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)" });
+  }
+
   try {
-    // Get all distinct months that have posts
     const { data: allPosts, error: allError } = await supabase
       .from("posts")
       .select("posted_at")
@@ -14,7 +24,6 @@ export default async function handler(req, res) {
 
     if (allError) throw allError;
 
-    // Derive available months from data
     const monthSet = new Set();
     for (const p of allPosts) {
       const d = new Date(p.posted_at);
@@ -27,7 +36,6 @@ export default async function handler(req, res) {
       })
       .sort((a, b) => b.year - a.year || b.month - a.month);
 
-    // If year+month provided, return posts for that month
     const { year, month } = req.query;
     if (year && month) {
       const start = new Date(Number(year), Number(month) - 1, 1).toISOString();

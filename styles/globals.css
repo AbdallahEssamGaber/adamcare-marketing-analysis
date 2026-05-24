@@ -353,3 +353,17 @@ a {
     display: none;
   }
 }
+
+.state-message {
+  text-align: center;
+  padding: 60px;
+  color: #999;
+  font-size: 14px;
+}
+
+.sync-message {
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  color: #555;
+}
