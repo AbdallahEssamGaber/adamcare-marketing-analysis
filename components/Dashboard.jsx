@@ -6,6 +6,7 @@ import { useSync } from "@/hooks/useSync";
 import EngagementBreakdown from "./charts/EngagementBreakdown";
 import PlatformSplit from "./charts/PlatformSplit";
 import WeeklyViews from "./charts/WeeklyViews";
+import DashboardSkeleton from "./DashboardSkeleton";
 import InsightsPanel from "./InsightsPanel";
 import MetricCard from "./MetricCard";
 import TopPosts from "./TopPosts";
@@ -31,7 +32,7 @@ export default function Dashboard() {
   } = useMetrics(posts, prevPosts);
 
   const insights = useInsights();
-  const { sync, syncing, message: syncMessage } = useSync(async () => {
+  const { sync, syncing } = useSync(async () => {
     const months = await refresh();
     if (months.length > 0) setSelectedMonth(months[0]);
   });
@@ -41,6 +42,9 @@ export default function Dashboard() {
     setSelectedMonth({ year: y, month: m });
     insights.clear();
   }
+
+  const hasData = posts.length > 0;
+  const showSkeleton = postsLoading || syncing || (!hasData && !selectedMonth);
 
   return (
     <>
@@ -57,6 +61,7 @@ export default function Dashboard() {
                 : ""
             }
             onChange={handleMonthChange}
+            disabled={syncing}
           >
             {availableMonths.length === 0 && (
               <option disabled value="">
@@ -78,60 +83,72 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {syncMessage && <div className="sync-message">{syncMessage}</div>}
+      <div className="dashboard-stack">
+        {hasData && (
+          <div
+            className={`dashboard-layer dashboard-live${
+              showSkeleton ? " is-hidden" : ""
+            }`}
+            aria-hidden={showSkeleton}
+          >
+            <div className="dashboard">
+              <div className="metrics">
+                <MetricCard
+                  label="Total Views"
+                  value={metrics.totalViews}
+                  prev={prevMetrics?.totalViews}
+                  format
+                />
+                <MetricCard
+                  label="Avg Reach / Post"
+                  value={metrics.avgReach}
+                  prev={prevMetrics?.avgReach}
+                  format
+                />
+                <MetricCard
+                  label="Avg Engagement Rate"
+                  value={metrics.avgEngagementRate}
+                  prev={prevMetrics?.avgEngagementRate}
+                  suffix="%"
+                />
+                <MetricCard
+                  label="Total Posts"
+                  value={metrics.totalPosts}
+                  prev={prevMetrics?.totalPosts}
+                />
+              </div>
 
-      <div className="dashboard">
-        {postsLoading ? (
-          <div className="state-message">Loading posts...</div>
-        ) : posts.length === 0 ? (
-          <div className="state-message">
-            No data for this month. Press <strong>Sync</strong> to fetch posts.
+              <div className="charts">
+                <WeeklyViews data={weeklyData} />
+                <EngagementBreakdown data={engagementData} />
+                <PlatformSplit data={platformSplit} />
+              </div>
+
+              <TopPosts posts={topPosts} />
+
+              <InsightsPanel
+                insights={insights.insights}
+                loading={insights.loading}
+                onGenerate={() =>
+                  insights.generate({ posts, metrics, selectedMonth })
+                }
+              />
+            </div>
           </div>
-        ) : (
-          <>
-            <div className="metrics">
-              <MetricCard
-                label="Total Views"
-                value={metrics.totalViews}
-                prev={prevMetrics?.totalViews}
-                format
-              />
-              <MetricCard
-                label="Avg Reach / Post"
-                value={metrics.avgReach}
-                prev={prevMetrics?.avgReach}
-                format
-              />
-              <MetricCard
-                label="Avg Engagement Rate"
-                value={metrics.avgEngagementRate}
-                prev={prevMetrics?.avgEngagementRate}
-                suffix="%"
-              />
-              <MetricCard
-                label="Total Posts"
-                value={metrics.totalPosts}
-                prev={prevMetrics?.totalPosts}
-              />
+        )}
+
+        {showSkeleton && (
+          <div className="dashboard-layer dashboard-skeleton-layer">
+            <DashboardSkeleton />
+          </div>
+        )}
+
+        {!showSkeleton && !hasData && (
+          <div className="dashboard">
+            <div className="state-message">
+              No data for this month. Press <strong>Sync</strong> to fetch posts.
             </div>
-
-            <div className="charts">
-              <WeeklyViews data={weeklyData} />
-              <EngagementBreakdown data={engagementData} />
-              <PlatformSplit data={platformSplit} />
-            </div>
-
-            <TopPosts posts={topPosts} />
-
-            <InsightsPanel
-              insights={insights.insights}
-              loading={insights.loading}
-              error={insights.error}
-              onGenerate={() =>
-                insights.generate({ posts, metrics, selectedMonth })
-              }
-            />
-          </>
+          </div>
         )}
       </div>
     </>

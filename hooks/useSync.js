@@ -1,27 +1,27 @@
 import { useCallback, useState } from "react";
+import { useToasts } from "@/context/ToastContext";
 
 export function useSync(onSynced) {
   const [syncing, setSyncing] = useState(false);
-  const [message, setMessage] = useState("");
+  const toasts = useToasts();
 
   const sync = useCallback(async () => {
     setSyncing(true);
-    setMessage("");
     try {
       const res = await fetch("/api/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error || "Sync failed");
+        toasts.error(data.error || "Sync failed");
       } else {
-        setMessage(data.message || "Sync complete");
+        toasts.success(data.message || "Sync complete");
         if (onSynced) await onSynced();
       }
     } catch (err) {
-      setMessage(err.message || "Sync failed");
+      toasts.error(err.message || "Sync failed");
     } finally {
       setSyncing(false);
     }
-  }, [onSynced]);
+  }, [onSynced, toasts]);
 
-  return { sync, syncing, message };
+  return { sync, syncing };
 }

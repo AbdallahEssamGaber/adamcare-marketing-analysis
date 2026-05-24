@@ -1,9 +1,4 @@
-export default function InsightsPanel({
-  insights,
-  loading,
-  error,
-  onGenerate,
-}) {
+export default function InsightsPanel({ insights, loading, onGenerate }) {
   return (
     <div className="insights-section">
       <div className="section-title">AI Insights</div>
@@ -14,7 +9,6 @@ export default function InsightsPanel({
       >
         {loading ? "Generating..." : "Generate Insights"}
       </button>
-      {error && <p className="gate-error">{error}</p>}
       {insights && (
         <div className="insights-content">
           {insights.split("\n\n").map((para, i) => (
