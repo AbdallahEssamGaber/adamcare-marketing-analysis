@@ -3,7 +3,7 @@ import { normalizePost, Post } from "@/types/post";
 
 const BASE = "https://graph.facebook.com/v21.0";
 
-async function getAndRefreshToken(): Promise<string> {
+async function getToken(): Promise<string> {
   if (!supabase) throw new Error("Supabase not configured");
 
   const { data, error } = await supabase
@@ -12,27 +12,10 @@ async function getAndRefreshToken(): Promise<string> {
     .eq("key", "instagram_access_token")
     .single();
 
-  if (error || !data) {
+  if (error || !data?.value) {
     throw new Error("Could not read Instagram token from Supabase settings");
   }
-  const token: string = data.value;
-
-  const url = `${BASE}/oauth/access_token?grant_type=fb_exchange_token&client_id=${process.env.META_APP_ID}&client_secret=${process.env.META_APP_SECRET}&fb_exchange_token=${token}`;
-  const res = await fetch(url);
-  const json = (await res.json()) as { access_token?: string };
-
-  if (json.access_token) {
-    await supabase
-      .from("settings")
-      .update({
-        value: json.access_token,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("key", "instagram_access_token");
-    return json.access_token;
-  }
-
-  return token;
+  return data.value as string;
 }
 
 interface InstagramMedia {
@@ -76,7 +59,7 @@ async function fetchInsights(
 }
 
 export async function fetchInstagramPosts(): Promise<Post[]> {
-  const token = await getAndRefreshToken();
+  const token = await getToken();
   const igId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID;
   if (!igId) throw new Error("INSTAGRAM_BUSINESS_ACCOUNT_ID not set");
 
